@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlmodel
+python-multipart
+pydantic<3
+pytesseract
+pillow
+google-genai
+pandas
