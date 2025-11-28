@@ -1,7 +1,7 @@
 # backend/agents/pitchdeck_agent.py
 import json
 from typing import Dict
-from ..config import settings
+from config import settings
 
 try:
     from google import genai

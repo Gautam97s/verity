@@ -1,9 +1,9 @@
 # backend/routers/pitchdeck.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
-from ..db import get_session
-from ..schemas.pitchdeck import PitchdeckRequest, PitchdeckResponse, PitchdeckSlide
-from ..services.pitchdeck_service import create_pitchdeck
+from db import get_session
+from schemas.pitchdeck import PitchdeckRequest, PitchdeckResponse, PitchdeckSlide
+from services.pitchdeck_service import create_pitchdeck
 
 router = APIRouter()
 

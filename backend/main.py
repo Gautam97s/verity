@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import settings
-from .db import init_db
-from .routers import ingest, cashflow, actions, insights, business
-from .routers import pitchdeck
+from config import settings
+from db import init_db
+from routers import ingest, cashflow, actions, insights, business
+from routers import pitchdeck
 
 app = FastAPI(title="Verity Backend")
 

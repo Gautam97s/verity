@@ -7,3 +7,4 @@ pytesseract
 pillow
 google-genai
 pandas
+python-dotenv

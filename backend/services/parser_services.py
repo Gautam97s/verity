@@ -1,9 +1,9 @@
 from sqlmodel import Session
-from ..models.transaction import Transaction
-from ..models.invoice import Invoice
-from ..models.contact import Contact
-from ..services.invoice_service import recompute_invoice_status
-from ..agents.parser_agent import parse_transaction_with_ai
+from models.transaction import Transaction
+from models.invoice import Invoice
+from models.contact import Contact
+from services.invoice_services import recompute_invoice_status
+from agents.parser_agent import parse_transaction_with_ai
 
 def parse_and_save_transaction(session: Session, business_id: int, raw_text: str, source: str):
     parsed = parse_transaction_with_ai(raw_text)

@@ -2,10 +2,10 @@
 from typing import Dict
 from datetime import datetime
 from sqlmodel import Session, select
-from ..models.business import Business
-from ..models.transaction import Transaction
-from ..models.invoice import Invoice
-from ..agents.pitchdeck_agent import generate_pitchdeck_outline
+from models.business import Business
+from models.transaction import Transaction
+from models.invoice import Invoice
+from agents.pitchdeck_agent import generate_pitchdeck_outline
 
 
 def compute_business_metrics(session: Session, business_id: int) -> Dict:
