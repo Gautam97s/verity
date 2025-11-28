@@ -2,10 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from db import init_db
-from routers import ingest, cashflow, actions, insights, business
-from routers import pitchdeck
+from routers import ingest, cashflow, actions, insights, business, pitchdeck, enrichment, risk, forecast, reports
 
-app = FastAPI(title="Verity Backend")
+app = FastAPI(title="Verity API", version="1.0.0")
 
 # CORS
 app.add_middleware(
@@ -17,13 +16,21 @@ app.add_middleware(
 )
 
 @app.on_event("startup")
-def startup():
+def on_startup():
     init_db()
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to Verity API"}
 
 # Register routes
 app.include_router(business.router, prefix="/business", tags=["Business"])
-app.include_router(ingest.router, prefix="/ingest", tags=["Ingestion"])
-app.include_router(cashflow.router, prefix="/cashflow", tags=["Cashflow"])
+app.include_router(ingest.router, prefix="/ingest", tags=["Ingest"])
+app.include_router(enrichment.router, prefix="/enrichment", tags=["Enrichment"])
+app.include_router(risk.router, prefix="/risk", tags=["Risk"])
 app.include_router(insights.router, prefix="/insights", tags=["Insights"])
 app.include_router(actions.router, prefix="/actions", tags=["Actions"])
+app.include_router(forecast.router, prefix="/forecast", tags=["Forecast"])
+app.include_router(reports.router, prefix="/reports", tags=["Reports"])
 app.include_router(pitchdeck.router, prefix="/pitchdeck", tags=["Pitchdeck"])
+app.include_router(cashflow.router, prefix="/cashflow", tags=["Cashflow"])
