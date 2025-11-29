@@ -13,8 +13,8 @@ from agents import parser_agent, csv_agent, enrichment_agent, risk_agent, insigh
 class TestAllLayersMocked(unittest.TestCase):
 
     def setUp(self):
-        # Mock settings.GEMINI_API_KEY to be truthy so agents try to use the client
-        self.settings_patcher = patch("config.settings.GEMINI_API_KEY", "mock_key")
+        # Mock settings.OPENAI_API_KEY to be truthy so agents try to use the client
+        self.settings_patcher = patch("config.settings.OPENAI_API_KEY", "mock_key")
         self.settings_patcher.start()
 
     def tearDown(self):

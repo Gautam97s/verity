@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
 class PitchdeckRequest(BaseModel):
-    metrics: Dict[str, Any]
+    metrics: Optional[Dict[str, Any]] = None
     business_id: Optional[int] = None
 
 class PitchdeckSlide(BaseModel):

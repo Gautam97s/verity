@@ -1,19 +1,20 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlmodel import Session
+from db import get_session
 from schemas.pitchdeck import PitchdeckRequest, PitchdeckResponse, PitchdeckSlide
 from agents.pitchdeck_agent import generate_pitchdeck_outline
+from services.pitchdeck_service import create_pitchdeck
 
 router = APIRouter()
 
 @router.post("/generate", response_model=PitchdeckResponse)
-def generate_pitchdeck(payload: PitchdeckRequest):
-    # If metrics are provided directly, use them. 
-    # If business_id is provided, we might need to fetch metrics (logic from previous implementation).
-    # For now, user said "pass metrics".
-    
-    if not payload.metrics:
-         raise HTTPException(status_code=400, detail="Metrics are required")
-
-    deck_data = generate_pitchdeck_outline(payload.metrics)
+def generate_pitchdeck_endpoint(payload: PitchdeckRequest, db: Session = Depends(get_session)):
+    if payload.metrics:
+        deck_data = generate_pitchdeck_outline(payload.metrics)
+    elif payload.business_id:
+        deck_data = create_pitchdeck(db, payload.business_id)
+    else:
+        raise HTTPException(status_code=400, detail="Either metrics or business_id is required")
 
     # shape into Pydantic model
     slides = [

@@ -1,37 +1,5 @@
 import json
 from typing import List, Dict, Any
-from config import settings
-
-try:
-    from google import genai
-    client = genai.Client(api_key=settings.GEMINI_API_KEY) if settings.GEMINI_API_KEY else None
-except ImportError:
-    client = None
-
-LEDGER_MAPPING_PROMPT = """
-You are an expert accounting assistant.
-Input:
-1. Parsed transaction JSON.
-2. Existing DB snapshot (contacts, invoices).
-
-Output: STRICT JSON schema:
-{
-  "contact_match": {
-    "match_type": "exact" | "fuzzy" | "new",
-    "contact_id": int | null,
-    "contact_name": "string"
-  },
-  "invoice_match": {
-    "matched": boolean,
-    "invoice_id": int | null,
-    "remaining_due": float | null
-  },
-  "transaction_record": {
-    "direction": "inflow" | "outflow",
-    "amount": float,
-    "category": "string",
-import json
-from typing import List, Dict, Any
 from utils.llm import generate_content
 
 LEDGER_MAPPING_PROMPT = """

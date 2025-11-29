@@ -43,7 +43,7 @@ def generate_content(prompt: str, context: str, model: str = None) -> Dict[str, 
     """
     if not client:
         logger.warning("Grok client not initialized (missing API key?)")
-        return {}
+        return {"error": "LLM client not initialized"}
 
     target_model = model or settings.LLM_MODEL
     
