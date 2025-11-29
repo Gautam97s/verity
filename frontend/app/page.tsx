@@ -1,65 +1,448 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+import React, { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
+import { API } from '../lib/api';
+import { CashflowSummary, Insight, ForecastResponse } from '../types';
+import { TrendingUp, TrendingDown, DollarSign, Activity, ArrowRight, Wallet } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// Mock data for the chart
+const chartData = [
+  { month: 'Jan', inflow: 420000, outflow: 380000 },
+  { month: 'Feb', inflow: 380000, outflow: 390000 },
+  { month: 'Mar', inflow: 550000, outflow: 410000 },
+  { month: 'Apr', inflow: 480000, outflow: 350000 },
+  { month: 'May', inflow: 510000, outflow: 460000 },
+  { month: 'Jun', inflow: 640000, outflow: 430000 },
+];
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-3 border border-white/50 dark:border-slate-700/50 rounded-xl shadow-xl">
+        <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Inflow: ₹{(payload[0].value / 1000).toFixed(0)}k
+          </p>
+          <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+            Outflow: ₹{(payload[1].value / 1000).toFixed(0)}k
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+    );
+  }
+  return null;
+};
+
+export default function DashboardPage() {
+  const [businessId, setBusinessId] = useState<number>(1);
+  const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Data State
+  const [cashflow, setCashflow] = useState<CashflowSummary | null>(null);
+  const [insights, setInsights] = useState<Insight[]>([]);
+  const [forecast, setForecast] = useState<ForecastResponse | null>(null);
+
+  // Refs for animation
+  const heroTextRef = useRef<HTMLDivElement>(null);
+  const metricsRef = useRef<HTMLDivElement>(null);
+  const chartSectionRef = useRef<HTMLDivElement>(null);
+  const insightsRef = useRef<HTMLDivElement>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      // Parallel requests
+      const [cfRes, insRes, fcRes] = await Promise.allSettled([
+        API.get(`/cashflow/summary/${businessId}`),
+        API.get(`/insights/${businessId}`),
+        API.get(`/forecast/${businessId}`)
+      ]);
+
+      // Handle Cashflow
+      if (cfRes.status === 'fulfilled') {
+        setCashflow(cfRes.value.data);
+      } else {
+        // Fallback Mock Data
+        setCashflow({
+          total_inflow: 1250000,
+          total_outflow: 850000,
+          net_balance: 400000
+        });
+      }
+
+      // Handle Insights
+      if (insRes.status === 'fulfilled') {
+        setInsights(insRes.value.data.insights || []);
+      } else {
+        // Fallback Mock Data
+        setInsights([
+          {
+            type: "Risk",
+            severity: "high",
+            title: "Late Payment Trend",
+            description: "Customer 'TechCorp' has delayed payments for 3 consecutive months.",
+            call_to_action: "Send Reminder"
+          },
+          {
+            type: "Optimization",
+            severity: "medium",
+            title: "Recurring Expense Increase",
+            description: "Software subscription costs have risen by 15% this quarter.",
+            call_to_action: "Review Subscriptions"
+          },
+          {
+            type: "Opportunity",
+            severity: "low",
+            title: "Surplus Cash",
+            description: "You have excess liquidity that could be invested in short-term liquid funds.",
+            call_to_action: "View Options"
+          }
+        ]);
+      }
+
+      // Handle Forecast
+      if (fcRes.status === 'fulfilled') {
+        setForecast(fcRes.value.data);
+      } else {
+        // Fallback Mock Data
+        setForecast({
+          summary: "Cashflow is projected to remain healthy for the next quarter, driven by seasonal sales uptake.",
+          trend: "improving",
+          recommendations: [
+            "Stock up inventory for upcoming festival season",
+            "Negotiate early payment discounts with top vendors"
+          ]
+        });
+      }
+
+    } catch (error) {
+      console.error("Error loading dashboard data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial Animation
+  useEffect(() => {
+    // Load data on mount to populate initial state
+    loadData();
+
+    const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+
+    // Hero Text
+    if (heroTextRef.current) {
+      tl.fromTo(heroTextRef.current.children,
+        { y: 30, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.8,
+          stagger: 0.1
+        }
+      );
+    }
+
+    // Metrics Cards
+    if (metricsRef.current) {
+      tl.fromTo(metricsRef.current.children,
+        { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.6,
+          stagger: 0.1
+        }, "-=0.4");
+    }
+
+    // Chart
+    if (chartSectionRef.current) {
+      tl.fromTo(chartSectionRef.current,
+        { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.6
+        }, "-=0.3");
+    }
+
+    // Insights & Forecast
+    if (insightsRef.current) {
+      tl.fromTo(insightsRef.current.children,
+        { y: 20, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.6,
+          stagger: 0.1
+        }, "-=0.2");
+    }
+  }, []);
+
+  // Format currency
+  const formatINR = (val: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(val);
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div ref={heroTextRef} className="space-y-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
+              Financial Overview
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
+              Real-time cashflow visibility and AI-driven insights.
+            </p>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-3 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 backdrop-blur-md shadow-sm">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">ID</span>
+              <input
+                type="number"
+                value={businessId}
+                onChange={(e) => setBusinessId(Number(e.target.value))}
+                className="w-20 pl-8 pr-2 py-1.5 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 border-none text-sm font-medium focus:ring-2 focus:ring-indigo-500/50 transition-all outline-none text-slate-700 dark:text-slate-200"
+              />
+            </div>
+            <button
+              onClick={loadData}
+              disabled={loading}
+              className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 hover:from-indigo-600 hover:via-sky-600 hover:to-emerald-500 text-white text-sm font-medium shadow-md shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-70 disabled:pointer-events-none"
+            >
+              {loading ? 'Refreshing...' : 'Load Data'}
+            </button>
+          </div>
         </div>
-      </main>
+      </div>
+
+      {/* Metrics Grid */}
+      <div ref={metricsRef} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Net Balance */}
+        <div className="group relative overflow-hidden rounded-2xl border border-white/60 dark:border-slate-700/60 bg-gradient-to-br from-white/80 via-slate-50/80 to-sky-50/50 dark:from-slate-800/80 dark:via-slate-900/80 dark:to-slate-950/80 backdrop-blur-xl shadow-lg shadow-slate-900/5 dark:shadow-black/20 p-6 transition-all hover:-translate-y-1 hover:shadow-xl">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1">Net Balance</p>
+              <h3 className="text-3xl font-bold text-slate-800 dark:text-white">
+                {cashflow ? formatINR(cashflow.net_balance) : '₹ --'}
+              </h3>
+            </div>
+            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+              <Wallet size={24} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+            <TrendingUp size={16} />
+            <span>Healthy buffer</span>
+          </div>
+        </div>
+
+        {/* Total Inflow */}
+        <div className="group relative overflow-hidden rounded-2xl border border-white/60 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-lg shadow-slate-900/5 dark:shadow-black/20 p-6 transition-all hover:-translate-y-1 hover:shadow-xl">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1">Total Inflow</p>
+              <h3 className="text-3xl font-bold text-slate-800 dark:text-white">
+                {cashflow ? formatINR(cashflow.total_inflow) : '₹ --'}
+              </h3>
+            </div>
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <DollarSign size={24} />
+            </div>
+          </div>
+          <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Last 30 days
+          </div>
+        </div>
+
+        {/* Total Outflow */}
+        <div className="group relative overflow-hidden rounded-2xl border border-white/60 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-lg shadow-slate-900/5 dark:shadow-black/20 p-6 transition-all hover:-translate-y-1 hover:shadow-xl">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-1">Total Outflow</p>
+              <h3 className="text-3xl font-bold text-slate-800 dark:text-white">
+                {cashflow ? formatINR(cashflow.total_outflow) : '₹ --'}
+              </h3>
+            </div>
+            <div className="p-2 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
+              <Activity size={24} />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center gap-2 text-sm text-rose-500 dark:text-rose-400">
+            <TrendingDown size={16} />
+            <span>High operational cost</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Chart Section */}
+      <div ref={chartSectionRef} className="rounded-2xl border border-white/60 dark:border-slate-700/60 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-lg shadow-slate-900/5 dark:shadow-black/20 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <TrendingUp size={20} />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Cashflow Trend</h3>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-medium">
+            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Inflow
+            </div>
+            <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Outflow
+            </div>
+          </div>
+        </div>
+
+        <div className="h-[300px] w-full">
+          {!mounted ? (
+            <div className="h-full w-full flex items-center justify-center text-slate-400 animate-pulse">Loading Chart...</div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorInflow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorOutflow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-slate-200 dark:text-slate-700" opacity={0.4} />
+                <XAxis
+                  dataKey="month"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#94a3b8', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                <Area
+                  type="monotone"
+                  dataKey="inflow"
+                  stroke="#10b981"
+                  fillOpacity={1}
+                  fill="url(#colorInflow)"
+                  strokeWidth={2}
+                  animationDuration={1500}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="outflow"
+                  stroke="#6366f1"
+                  fillOpacity={1}
+                  fill="url(#colorOutflow)"
+                  strokeWidth={2}
+                  animationDuration={1500}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Insights & Forecast Split */}
+      <div ref={insightsRef} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Forecast Card */}
+        <div className="rounded-2xl border border-white/60 dark:border-slate-700/60 bg-gradient-to-br from-indigo-50/50 via-white/60 to-white/60 dark:from-indigo-950/30 dark:via-slate-900/60 dark:to-slate-900/60 backdrop-blur-xl p-6 shadow-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+              <Activity size={20} />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Forecast & Analysis</h3>
+          </div>
+
+          <div className="space-y-4">
+            {forecast ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Trend:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${forecast.trend === 'improving' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :
+                    forecast.trend === 'declining' ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300' :
+                      'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+                    }`}>
+                    {forecast.trend}
+                  </span>
+                </div>
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                  {forecast.summary}
+                </p>
+                <div className="pt-2">
+                  <h4 className="text-xs uppercase tracking-wider text-slate-500 mb-2 font-semibold">Recommendations</h4>
+                  <ul className="space-y-2">
+                    {(forecast.recommendations || []).map((rec, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0" />
+                        {rec}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-10 text-slate-400 italic">Load data to see forecast</div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Insights Preview */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Recent Insights</h3>
+            <a href="/insights" className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 flex items-center gap-1 transition-colors">
+              View All <ArrowRight size={14} />
+            </a>
+          </div>
+
+          <div className="space-y-3">
+            {insights.length > 0 ? (
+              insights.slice(0, 3).map((insight, idx) => (
+                <div key={idx} className="group p-4 rounded-xl border border-white/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all backdrop-blur-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-1">{insight.title}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">{insight.description}</p>
+                    </div>
+                    <span className={`flex-shrink-0 w-2 h-2 rounded-full mt-1.5 ${insight.severity === 'high' ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]' :
+                      insight.severity === 'medium' ? 'bg-amber-500' :
+                        'bg-emerald-500'
+                      }`} />
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-10 text-slate-400 italic rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                No insights available
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
