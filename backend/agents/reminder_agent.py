@@ -1,12 +1,6 @@
 import json
 from typing import Dict
-from config import settings
-
-try:
-    from google import genai
-    client = genai.Client(api_key=settings.GEMINI_API_KEY) if settings.GEMINI_API_KEY else None
-except ImportError:
-    client = None
+from utils.llm import generate_content
 
 REMINDER_PROMPT = """
 You are a helpful assistant for a small business owner.
@@ -26,37 +20,48 @@ Output: STRICT JSON schema:
 {
   "message": "string"
 }
-
-Responsibilities:
-- Generate a WhatsApp-style reminder message.
-- Adapt tone and language as requested.
-- Include key details (amount, invoice #, due date).
-- Return ONLY JSON.
 """
 
-def _call_gemini(prompt: str, content: str) -> dict:
-    if client is None or not settings.GEMINI_API_KEY:
-        return {"message": "Reminder generation unavailable (offline)."}
-    
-    full_prompt = f"{prompt}\n\nINPUT_DATA:\n{content}"
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash-exp",
-            contents=full_prompt,
-        )
-        text = response.text.strip()
-        if text.startswith("```"):
-            text = text.strip("`")
-            if text.startswith("json"):
-                text = text[4:]
-        return json.loads(text)
-    except Exception as e:
-        print(f"Gemini Error: {e}")
-        return {"message": "", "error": str(e)}
+
+def _fallback_template(context: Dict) -> Dict:
+    """Local template when LLM is unavailable / fails."""
+    customer = context.get("customer_name", "Customer")
+    business = context.get("business_name", "your business")
+    invoice = context.get("invoice_number", "the invoice")
+    amount = context.get("amount_due", 0)
+    due_date = context.get("due_date", "")
+    days_overdue = context.get("days_overdue")
+
+    extra = ""
+    if days_overdue is not None and days_overdue > 0:
+        extra = f" It is overdue by {days_overdue} days."
+
+    msg = (
+        f"Hi {customer}, this is a gentle reminder from {business} "
+        f"for the pending payment of ₹{amount} for invoice {invoice}"
+    )
+    if due_date:
+        msg += f" (due on {due_date})."
+    else:
+        msg += "."
+    msg += extra + " Please ignore this message if you have already paid. Thank you!"
+
+    return {"message": msg}
+
 
 def generate_payment_reminder(context: Dict) -> Dict:
     """
     Generates a payment reminder message.
+    Tries Grok (via utils.llm) first, then falls back to a local template.
     """
     content = json.dumps(context, indent=2)
-    return _call_gemini(REMINDER_PROMPT, content)
+
+    # 1. Try Grok
+    result = generate_content(REMINDER_PROMPT, content)
+
+    # 2. If Grok failed / empty message → fallback template
+    if not result or not result.get("message") or "error" in result:
+        print(f"[REMINDER] Grok failed or returned error, using fallback. Result: {result}")
+        return _fallback_template(context)
+
+    return result

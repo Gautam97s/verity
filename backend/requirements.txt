@@ -8,3 +8,4 @@ pillow
 google-genai
 pandas
 python-dotenv
+openai
