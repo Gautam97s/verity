@@ -7,15 +7,26 @@ from .logger import get_logger
 
 logger = get_logger(__name__)
 
-# Initialize OpenAI client for Grok
-# Base URL for xAI: https://api.x.ai/v1
+# Initialize Client (OpenAI vs Groq vs xAI)
+api_key = settings.OPENAI_API_KEY
+base_url = None # Default to OpenAI (https://api.openai.com/v1)
+
+if api_key:
+    if api_key.startswith("gsk_"):
+        logger.info("Detected Groq API Key. Switching Base URL to Groq.")
+        base_url = "https://api.groq.com/openai/v1"
+    elif api_key.startswith("xai-"): # Assuming xAI keys might have a prefix, or user sets base_url manually
+        logger.info("Detected xAI Key (assumed). Switching Base URL to xAI.")
+        base_url = "https://api.x.ai/v1"
+
 try:
     client = Client(
-        api_key=settings.GROK_API_KEY,
-        base_url="https://api.x.ai/v1",
-    ) if settings.GROK_API_KEY else None
+        api_key=api_key,
+        base_url=base_url,
+        timeout=30.0, # Standard timeout
+    ) if api_key else None
 except Exception as e:
-    logger.error(f"Failed to initialize Grok client: {e}")
+    logger.error(f"Failed to initialize LLM client: {e}")
     client = None
 
 def generate_content(prompt: str, context: str, model: str = None) -> Dict[str, Any]:
@@ -36,8 +47,14 @@ def generate_content(prompt: str, context: str, model: str = None) -> Dict[str, 
 
     target_model = model or settings.LLM_MODEL
     
+    # Auto-fix model if using Groq
+    if client and client.base_url.host == "api.groq.com":
+        if "gpt" in target_model or "grok" in target_model:
+             logger.warning(f"Groq API does not support '{target_model}'. Switching to 'llama3-8b-8192'.")
+             target_model = "llama3-8b-8192"
+    
     try:
-        logger.info(f"Calling Grok model: {target_model}")
+        logger.info(f"Calling LLM model: {target_model}")
         
         # Grok chat completion
         response = client.chat.completions.create(
