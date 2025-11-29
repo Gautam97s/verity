@@ -22,6 +22,7 @@ venv.bak/
 *.env
 .env.*
 !.env.example
+.env
 
 # Build / Distribution
 build/
