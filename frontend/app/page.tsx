@@ -1,21 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import gsap from 'gsap';
 import { API } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { CashflowSummary, Insight, ForecastResponse } from '../types';
 import { TrendingUp, TrendingDown, DollarSign, Activity, ArrowRight, Wallet } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Mock data for the chart
-const chartData = [
-  { month: 'Jan', inflow: 420000, outflow: 380000 },
-  { month: 'Feb', inflow: 380000, outflow: 390000 },
-  { month: 'Mar', inflow: 550000, outflow: 410000 },
-  { month: 'Apr', inflow: 480000, outflow: 350000 },
-  { month: 'May', inflow: 510000, outflow: 460000 },
-  { month: 'Jun', inflow: 640000, outflow: 430000 },
-];
+// Mock data for the chart - REMOVED
+const chartData: any[] = [];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -39,13 +34,22 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function DashboardPage() {
-  const [businessId, setBusinessId] = useState<number>(1);
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/signup");
+    } else if (user) {
+      loadData();
+    }
+  }, [user, authLoading]);
 
   // Data State
   const [cashflow, setCashflow] = useState<CashflowSummary | null>(null);
@@ -59,70 +63,29 @@ export default function DashboardPage() {
   const insightsRef = useRef<HTMLDivElement>(null);
 
   const loadData = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       // Parallel requests
       const [cfRes, insRes, fcRes] = await Promise.allSettled([
-        API.get(`/cashflow/summary/${businessId}`),
-        API.get(`/insights/${businessId}`),
-        API.get(`/forecast/${businessId}`)
+        API.get(`/cashflow/summary/${user.id}`),
+        API.get(`/insights/${user.id}`),
+        API.get(`/forecast/${user.id}`)
       ]);
 
       // Handle Cashflow
       if (cfRes.status === 'fulfilled') {
         setCashflow(cfRes.value.data);
-      } else {
-        // Fallback Mock Data
-        setCashflow({
-          total_inflow: 1250000,
-          total_outflow: 850000,
-          net_balance: 400000
-        });
       }
 
       // Handle Insights
       if (insRes.status === 'fulfilled') {
         setInsights(insRes.value.data.insights || []);
-      } else {
-        // Fallback Mock Data
-        setInsights([
-          {
-            type: "Risk",
-            severity: "high",
-            title: "Late Payment Trend",
-            description: "Customer 'TechCorp' has delayed payments for 3 consecutive months.",
-            call_to_action: "Send Reminder"
-          },
-          {
-            type: "Optimization",
-            severity: "medium",
-            title: "Recurring Expense Increase",
-            description: "Software subscription costs have risen by 15% this quarter.",
-            call_to_action: "Review Subscriptions"
-          },
-          {
-            type: "Opportunity",
-            severity: "low",
-            title: "Surplus Cash",
-            description: "You have excess liquidity that could be invested in short-term liquid funds.",
-            call_to_action: "View Options"
-          }
-        ]);
       }
 
       // Handle Forecast
       if (fcRes.status === 'fulfilled') {
         setForecast(fcRes.value.data);
-      } else {
-        // Fallback Mock Data
-        setForecast({
-          summary: "Cashflow is projected to remain healthy for the next quarter, driven by seasonal sales uptake.",
-          trend: "improving",
-          recommendations: [
-            "Stock up inventory for upcoming festival season",
-            "Negotiate early payment discounts with top vendors"
-          ]
-        });
       }
 
     } catch (error) {
@@ -134,9 +97,7 @@ export default function DashboardPage() {
 
   // Initial Animation
   useEffect(() => {
-    // Load data on mount to populate initial state
-    loadData();
-
+    // Animations
     const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
 
     // Hero Text
@@ -197,6 +158,10 @@ export default function DashboardPage() {
     }).format(val);
   };
 
+  if (authLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading...</div>;
+  }
+
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -212,22 +177,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Controls */}
-          <div className="flex items-center gap-3 bg-white/60 dark:bg-slate-900/60 p-1.5 rounded-xl border border-white/60 dark:border-slate-700/60 backdrop-blur-md shadow-sm">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">ID</span>
-              <input
-                type="number"
-                value={businessId}
-                onChange={(e) => setBusinessId(Number(e.target.value))}
-                className="w-20 pl-8 pr-2 py-1.5 rounded-lg bg-slate-100/50 dark:bg-slate-800/50 border-none text-sm font-medium focus:ring-2 focus:ring-indigo-500/50 transition-all outline-none text-slate-700 dark:text-slate-200"
-              />
-            </div>
+          <div className="flex items-center gap-3">
             <button
               onClick={loadData}
               disabled={loading}
-              className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 hover:from-indigo-600 hover:via-sky-600 hover:to-emerald-500 text-white text-sm font-medium shadow-md shadow-indigo-500/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-70 disabled:pointer-events-none"
+              className="px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-600 dark:text-slate-300 text-sm font-medium transition-all"
             >
-              {loading ? 'Refreshing...' : 'Load Data'}
+              {loading ? 'Refreshing...' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -314,6 +270,8 @@ export default function DashboardPage() {
         <div className="h-[300px] w-full">
           {!mounted ? (
             <div className="h-full w-full flex items-center justify-center text-slate-400 animate-pulse">Loading Chart...</div>
+          ) : chartData.length === 0 ? (
+            <div className="h-full w-full flex items-center justify-center text-slate-400 italic">No transaction data available</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>

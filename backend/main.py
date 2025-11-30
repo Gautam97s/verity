@@ -1,14 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-try:
-    from config import settings
-    from db import init_db
-    from routers import ingest, cashflow, actions, insights, business, pitchdeck, enrichment, risk, forecast, reports, webhooks
-except ImportError:
-    from .config import settings
-    from .db import init_db
-    from .routers import ingest, cashflow, actions, insights, business, pitchdeck, enrichment, risk, forecast, reports, webhooks
+from config import settings
+from db import init_db
+from routers import ingest, cashflow, actions, insights, business, pitchdeck, enrichment, risk, forecast, reports, webhooks, auth
 
 
 app = FastAPI(title="Verity API", version="1.0.0")
@@ -42,3 +37,4 @@ app.include_router(reports.router, prefix="/reports", tags=["Reports"])
 app.include_router(pitchdeck.router, prefix="/pitchdeck", tags=["Pitchdeck"])
 app.include_router(cashflow.router, prefix="/cashflow", tags=["Cashflow"])
 app.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
