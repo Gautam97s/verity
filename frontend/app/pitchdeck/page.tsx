@@ -1,35 +1,40 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { API } from '../../lib/api';
 import { PitchdeckResponse } from '../../types';
 import gsap from 'gsap';
 import { Presentation, Download, Share2, Sparkles, Layers } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PitchdeckPage() {
-    const [businessId, setBusinessId] = useState(1);
+    const { user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
     const [deck, setDeck] = useState<PitchdeckResponse | null>(null);
+    const router = useRouter();
+
+    const [mounted, setMounted] = useState(false);
 
     const slidesContainerRef = useRef<HTMLDivElement>(null);
 
+    useEffect(() => {
+        setMounted(true);
+        if (!authLoading && !user) {
+            router.push("/signup");
+        }
+    }, [user, authLoading]);
+
     const generateDeck = async () => {
+        if (!user) return;
         setLoading(true);
         setDeck(null); // Reset for animation
         try {
-            const res = await API.post('/pitchdeck/generate', { business_id: businessId });
+            const res = await API.post('/pitchdeck/generate', { business_id: user.id });
             setDeck(res.data);
         } catch (error) {
             console.error("Error generating pitchdeck", error);
-            // Mock data in case of error for demo
-            setDeck({
-                title: "Growth Strategy 2024",
-                slides: [
-                    { heading: "Market Opportunity", bullets: ["$50B Market Size", "15% YoY Growth in Tier 2 Cities", "Underserved MSME Credit Demand"] },
-                    { heading: "Our Solution", bullets: ["AI-First Credit Scoring", "Zero-Touch Disbursement", "Hyper-local vernacular support"] },
-                    { heading: "Traction", bullets: ["500+ Active Merchants", "₹2Cr Monthly GTV", "45% Month-on-Month Retention"] }
-                ]
-            });
+            setDeck(null);
         } finally {
             setLoading(false);
         }
@@ -52,6 +57,10 @@ export default function PitchdeckPage() {
         }
     }, [deck]);
 
+    if (!mounted || authLoading) {
+        return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading...</div>;
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -72,13 +81,6 @@ export default function PitchdeckPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <input
-                        type="number"
-                        value={businessId}
-                        onChange={(e) => setBusinessId(Number(e.target.value))}
-                        className="w-24 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 text-center"
-                        placeholder="Biz ID"
-                    />
                     <button
                         onClick={generateDeck}
                         disabled={loading}

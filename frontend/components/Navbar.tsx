@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sun, Moon, LayoutDashboard, Zap, Lightbulb, Presentation } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar: React.FC = () => {
+    const { user, logout } = useAuth();
     const [isDark, setIsDark] = useState(false);
     const pathname = usePathname();
 
@@ -44,9 +46,6 @@ const Navbar: React.FC = () => {
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
-                        <span className="text-white font-bold text-lg">V</span>
-                    </div>
                     <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300">
                         Verity
                     </span>
@@ -62,8 +61,8 @@ const Navbar: React.FC = () => {
                                 key={link.path}
                                 href={link.path}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 ${isActive
-                                        ? 'bg-slate-200/50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400'
-                                        : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
+                                    ? 'bg-slate-200/50 dark:bg-slate-800/50 text-indigo-600 dark:text-indigo-400'
+                                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
                                     }`}
                             >
                                 <Icon size={16} />
@@ -73,18 +72,30 @@ const Navbar: React.FC = () => {
                     })}
                 </nav>
 
-                {/* Theme Toggle */}
-                <button
-                    onClick={toggleTheme}
-                    className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 border border-slate-200/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-slate-800/60"
-                    aria-label="Toggle theme"
-                >
-                    {isDark ? (
-                        <Moon size={16} className="text-indigo-400" />
-                    ) : (
-                        <Sun size={16} className="text-amber-500" />
+                {/* Actions */}
+                <div className="flex items-center gap-3">
+                    {user && (
+                        <button
+                            onClick={logout}
+                            className="text-sm font-medium text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                        >
+                            Logout
+                        </button>
                     )}
-                </button>
+
+                    {/* Theme Toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 border border-slate-200/50 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-slate-800/60"
+                        aria-label="Toggle theme"
+                    >
+                        {isDark ? (
+                            <Moon size={16} className="text-indigo-400" />
+                        ) : (
+                            <Sun size={16} className="text-amber-500" />
+                        )}
+                    </button>
+                </div>
             </div>
         </header>
     );

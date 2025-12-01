@@ -23,14 +23,5 @@ def explain_forecast(forecast_data: Dict) -> Dict:
     result = generate_content(FORECAST_EXPLANATION_PROMPT, content)
     if not result or "error" in result:
         print(f"Forecast Agent Error: {result['error']}. Using Mock Data.")
-        return {
-            "summary": "Cashflow is projected to remain positive with a steady 5% month-over-month growth. Key drivers include consistent sales volume and controlled operational costs.",
-            "key_drivers": ["Steady Sales Volume", "Controlled Expenses", "New Client Acquisition"],
-            "recommendations": [
-                "Consider early payment discounts for suppliers to improve margins.",
-                "Allocate surplus cash to short-term liquid funds.",
-                "Review subscription costs for potential savings."
-            ],
-            "trend": "improving"
-        }
+        return None
     return result

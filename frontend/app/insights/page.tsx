@@ -1,67 +1,47 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { API } from '../../lib/api';
 import { Insight } from '../../types';
 import gsap from 'gsap';
 import { Lightbulb, AlertTriangle, CheckCircle2, Info, RefreshCw } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export default function InsightsPage() {
-    const [businessId, setBusinessId] = useState(1);
+    const { user, loading: authLoading } = useAuth();
     const [insights, setInsights] = useState<Insight[]>([]);
     const [loading, setLoading] = useState(false);
+    const [mounted, setMounted] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+
+    useEffect(() => {
+        setMounted(true);
+        if (!authLoading && !user) {
+            router.push("/signup");
+        } else if (user) {
+            fetchInsights();
+        }
+    }, [user, authLoading]);
 
     const fetchInsights = async () => {
+        if (!user) return;
         setLoading(true);
         try {
-            const res = await API.get(`/insights/${businessId}`);
+            const res = await API.get(`/insights/${user.id}`);
             if (res.data && res.data.insights) {
                 setInsights(res.data.insights);
             } else {
                 setInsights([]);
             }
         } catch (error) {
-            console.warn("Failed to load insights, utilizing mock data for demo.");
-            // Fallback Mock Data
-            setInsights([
-                {
-                    type: "Risk",
-                    severity: "high",
-                    title: "Late Payment Trend",
-                    description: "Customer 'TechCorp' has delayed payments for 3 consecutive months. This is impacting your working capital cycle.",
-                    call_to_action: "Send Reminder"
-                },
-                {
-                    type: "Optimization",
-                    severity: "medium",
-                    title: "Recurring Expense Increase",
-                    description: "Software subscription costs have risen by 15% this quarter. Consider auditing unused seats.",
-                    call_to_action: "Review Subscriptions"
-                },
-                {
-                    type: "Opportunity",
-                    severity: "low",
-                    title: "Surplus Cash",
-                    description: "You have excess liquidity that could be invested in short-term liquid funds to earn 6-7% annual returns.",
-                    call_to_action: "View Options"
-                },
-                {
-                    type: "Compliance",
-                    severity: "medium",
-                    title: "GST Filing Due",
-                    description: "Upcoming GST filing deadline in 5 days. Ensure all invoices are reconciled.",
-                    call_to_action: "Reconcile Now"
-                }
-            ]);
+            console.warn("Failed to load insights");
+            setInsights([]);
         } finally {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        fetchInsights();
-    }, [businessId]);
 
     useEffect(() => {
         if (insights.length > 0 && containerRef.current) {
@@ -91,6 +71,10 @@ export default function InsightsPage() {
         }
     };
 
+    if (!mounted || authLoading) {
+        return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading...</div>;
+    }
+
     return (
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -99,13 +83,6 @@ export default function InsightsPage() {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">AI-generated financial health check and opportunities.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <input
-                        type="number"
-                        value={businessId}
-                        onChange={(e) => setBusinessId(Number(e.target.value))}
-                        className="w-20 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                        placeholder="ID"
-                    />
                     <button
                         onClick={fetchInsights}
                         disabled={loading}
