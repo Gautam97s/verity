@@ -5,7 +5,8 @@ load_dotenv()
 class Settings:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'verity.db')}")
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or os.getenv("GROK_API_KEY")
+    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
     LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o") # Default to OpenAI model
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*").split(",")
     TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")

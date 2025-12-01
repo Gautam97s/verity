@@ -9,8 +9,7 @@ import { CashflowSummary, Insight, ForecastResponse } from '../types';
 import { TrendingUp, TrendingDown, DollarSign, Activity, ArrowRight, Wallet } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Mock data for the chart - REMOVED
-const chartData: any[] = [];
+
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -55,6 +54,7 @@ export default function DashboardPage() {
   const [cashflow, setCashflow] = useState<CashflowSummary | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [forecast, setForecast] = useState<ForecastResponse | null>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
 
   // Refs for animation
   const heroTextRef = useRef<HTMLDivElement>(null);
@@ -67,10 +67,11 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       // Parallel requests
-      const [cfRes, insRes, fcRes] = await Promise.allSettled([
+      const [cfRes, insRes, fcRes, histRes] = await Promise.allSettled([
         API.get(`/cashflow/summary/${user.id}`),
         API.get(`/insights/${user.id}`),
-        API.get(`/forecast/${user.id}`)
+        API.get(`/forecast/${user.id}`),
+        API.get(`/cashflow/history/${user.id}`)
       ]);
 
       // Handle Cashflow
@@ -86,6 +87,11 @@ export default function DashboardPage() {
       // Handle Forecast
       if (fcRes.status === 'fulfilled') {
         setForecast(fcRes.value.data);
+      }
+
+      // Handle History (Chart)
+      if (histRes.status === 'fulfilled') {
+        setChartData(histRes.value.data);
       }
 
     } catch (error) {
@@ -224,7 +230,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-            Last 30 days
+            Last 3 Months
           </div>
         </div>
 

@@ -23,6 +23,7 @@ def compute_business_metrics(session: Session, business_id: int) -> Dict:
         return f"{y}-{m:02d}"
 
     monthly_revenue = {}
+    monthly_outflow = {}
     total_inflow_last_3m = 0.0
     total_outflow_last_3m = 0.0
 
@@ -34,16 +35,22 @@ def compute_business_metrics(session: Session, business_id: int) -> Dict:
         key = month_key(t.date.year, t.date.month)
         if t.direction == "inflow":
             monthly_revenue[key] = monthly_revenue.get(key, 0.0) + t.amount
+        elif t.direction == "outflow":
+            monthly_outflow[key] = monthly_outflow.get(key, 0.0) + t.amount
 
-    last_keys = sorted(monthly_revenue.keys())[-3:]
+    # Get all unique keys from both
+    all_keys = sorted(set(monthly_revenue.keys()) | set(monthly_outflow.keys()))
+    last_keys = all_keys[-3:] if len(all_keys) >= 3 else all_keys
+    
     for k in last_keys:
-        total_inflow_last_3m += monthly_revenue[k]
+        total_inflow_last_3m += monthly_revenue.get(k, 0.0)
+        total_outflow_last_3m += monthly_outflow.get(k, 0.0)
 
     # very rough growth calculation: last month vs previous month
     revenue_growth_percent = None
     if len(last_keys) >= 2:
-        last = monthly_revenue[last_keys[-1]]
-        prev = monthly_revenue[last_keys[-2]]
+        last = monthly_revenue.get(last_keys[-1], 0.0)
+        prev = monthly_revenue.get(last_keys[-2], 0.0)
         if prev > 0:
             revenue_growth_percent = (last - prev) / prev * 100
 
@@ -61,7 +68,9 @@ def compute_business_metrics(session: Session, business_id: int) -> Dict:
         "industry": getattr(business, "industry", None),
         "location": getattr(business, "location", None),
         "monthly_revenue": monthly_revenue,
+        "monthly_outflow": monthly_outflow,
         "total_inflow_last_3m": total_inflow_last_3m,
+        "total_outflow_last_3m": total_outflow_last_3m,
         "revenue_growth_percent": revenue_growth_percent,
         "overdue_amount": overdue_amount,
         # Extend later with: top customers, margins, etc.

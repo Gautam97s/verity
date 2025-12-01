@@ -6,34 +6,45 @@ from models.invoice import Invoice
 from models.transaction import Transaction
 from datetime import datetime, timedelta
 import random
+from utils.auth import get_password_hash
 
 def seed_data():
     init_db()
     with Session(engine) as session:
         # Check if business exists
-        existing_business = session.exec(select(Business).where(Business.id == 1)).first()
+        target_username = "kuro911"
+        target_password = "Gautam@2005"
+        
+        existing_business = session.exec(select(Business).where(Business.username == target_username)).first()
+        
+        business_id = None
+        
         if existing_business:
-            print("Business exists. Clearing old data...")
-            session.exec(delete(Transaction).where(Transaction.business_id == 1))
-            session.exec(delete(Invoice).where(Invoice.business_id == 1))
-            session.exec(delete(Contact).where(Contact.business_id == 1))
-            session.delete(existing_business)
+            print(f"Business with username '{target_username}' exists. Clearing old data...")
+            business_id = existing_business.id
+            session.exec(delete(Transaction).where(Transaction.business_id == business_id))
+            session.exec(delete(Invoice).where(Invoice.business_id == business_id))
+            session.exec(delete(Contact).where(Contact.business_id == business_id))
+            # We don't delete the business itself, just the data
             session.commit()
             print("Old data cleared.")
-
-        # 1. Create Business
-        business = Business(
-            id=1,
-            name="TechFlow Solutions",
-            owner_name="Gautam",
-            industry="Technology",
-            location="Bangalore",
-            created_at=datetime.utcnow() - timedelta(days=365)
-        )
-        session.add(business)
-        session.commit()
-        session.refresh(business)
-        print(f"Created Business: {business.name}")
+            business = existing_business
+        else:
+            print(f"Creating new business for '{target_username}'...")
+            business = Business(
+                name="TechFlow Solutions",
+                username=target_username,
+                hashed_password=get_password_hash(target_password),
+                owner_name="Gautam",
+                industry="Technology",
+                location="Bangalore",
+                created_at=datetime.utcnow() - timedelta(days=365)
+            )
+            session.add(business)
+            session.commit()
+            session.refresh(business)
+            business_id = business.id
+            print(f"Created Business: {business.name} (ID: {business.id})")
 
         # 2. Create Contacts
         contacts = [
@@ -87,39 +98,49 @@ def seed_data():
         print(f"Created {len(transactions)} Transactions")
 
         # 4. Create Invoices (Some overdue)
-        invoices = [
-            Invoice(
-                business_id=business.id,
-                contact_id=1, # Alpha Corp
-                amount=25000,
-                type="receivable",
-                status="overdue",
-                due_date=(datetime.utcnow() - timedelta(days=10)).date(),
-                description="Web Development Services"
-            ),
-            Invoice(
-                business_id=business.id,
-                contact_id=2, # Beta Inc
-                amount=15000,
-                type="receivable",
-                status="pending",
-                due_date=(datetime.utcnow() + timedelta(days=5)).date(),
-                description="Maintenance Contract"
-            ),
-             Invoice(
-                business_id=business.id,
-                contact_id=3, # Gamma Ltd
-                amount=8000,
-                type="payable",
-                status="pending",
-                due_date=(datetime.utcnow() + timedelta(days=2)).date(),
-                description="Server Hosting"
-            )
-        ]
-        for inv in invoices:
-            session.add(inv)
-        session.commit()
-        print("Created Invoices")
+        # Need to fetch contacts to get their IDs
+        current_contacts = session.exec(select(Contact).where(Contact.business_id == business.id)).all()
+        if len(current_contacts) >= 3:
+             # Map names to IDs for easier access if needed, or just use indices
+            c1 = current_contacts[0]
+            c2 = current_contacts[1]
+            c3 = current_contacts[2]
+
+            invoices = [
+                Invoice(
+                    business_id=business.id,
+                    contact_id=c1.id, # Alpha Corp
+                    amount=25000,
+                    type="receivable",
+                    status="overdue",
+                    due_date=(datetime.utcnow() - timedelta(days=10)).date(),
+                    description="Web Development Services"
+                ),
+                Invoice(
+                    business_id=business.id,
+                    contact_id=c2.id, # Beta Inc
+                    amount=15000,
+                    type="receivable",
+                    status="pending",
+                    due_date=(datetime.utcnow() + timedelta(days=5)).date(),
+                    description="Maintenance Contract"
+                ),
+                 Invoice(
+                    business_id=business.id,
+                    contact_id=c3.id, # Gamma Ltd
+                    amount=8000,
+                    type="payable",
+                    status="pending",
+                    due_date=(datetime.utcnow() + timedelta(days=2)).date(),
+                    description="Server Hosting"
+                )
+            ]
+            for inv in invoices:
+                session.add(inv)
+            session.commit()
+            print("Created Invoices")
+        else:
+            print("Not enough contacts created to seed invoices.")
 
 if __name__ == "__main__":
     seed_data()
