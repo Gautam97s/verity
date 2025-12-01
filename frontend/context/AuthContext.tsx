@@ -24,28 +24,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
 
-    const fetchUser = async (token: string) => {
+    const fetchUser = async (token: string): Promise<boolean> => {
         try {
-            const res = await fetch("http://localhost:8000/business/me", {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/business/me`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {
                 const userData = await res.json();
                 setUser(userData);
+                return true;
             } else {
                 localStorage.removeItem("token");
                 setUser(null);
+                return false;
             }
         } catch (error) {
             console.error("Failed to fetch user", error);
             localStorage.removeItem("token");
             setUser(null);
+            return false;
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        if (typeof window === "undefined") {
+            setLoading(false);
+            return;
+        }
+
         const token = localStorage.getItem("token");
         if (token) {
             fetchUser(token);
@@ -57,8 +65,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (token: string) => {
         localStorage.setItem("token", token);
         setLoading(true);
-        await fetchUser(token);
-        router.push("/");
+        try {
+            const success = await fetchUser(token);
+            if (success) {
+                router.push("/");
+            }
+        } catch (error) {
+            console.error("Login error", error);
+            setLoading(false);
+        }
     };
 
     const logout = () => {

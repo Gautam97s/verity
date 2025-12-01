@@ -4,7 +4,7 @@ from models.business import Business
 from models.contact import Contact
 from models.invoice import Invoice
 from models.transaction import Transaction
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import random
 from utils.auth import get_password_hash
 
@@ -38,9 +38,8 @@ def seed_data():
                 owner_name="Gautam",
                 industry="Technology",
                 location="Bangalore",
-                created_at=datetime.utcnow() - timedelta(days=365)
-            )
-            session.add(business)
+                created_at=datetime.now(timezone.utc) - timedelta(days=365)
+            )            session.add(business)
             session.commit()
             session.refresh(business)
             business_id = business.id
@@ -60,7 +59,7 @@ def seed_data():
 
         # 3. Create Transactions (Last 6 months)
         # Pattern: Growing revenue, some expenses
-        start_date = datetime.utcnow() - timedelta(days=180)
+        start_date = datetime.now(timezone.utc) - timedelta(days=180)
         transactions = []
         
         for i in range(180):
@@ -113,7 +112,7 @@ def seed_data():
                     amount=25000,
                     type="receivable",
                     status="overdue",
-                    due_date=(datetime.utcnow() - timedelta(days=10)).date(),
+                    due_date=(datetime.now(timezone.utc) - timedelta(days=10)).date(),
                     description="Web Development Services"
                 ),
                 Invoice(
@@ -122,7 +121,7 @@ def seed_data():
                     amount=15000,
                     type="receivable",
                     status="pending",
-                    due_date=(datetime.utcnow() + timedelta(days=5)).date(),
+                    due_date=(datetime.now(timezone.utc) + timedelta(days=5)).date(),
                     description="Maintenance Contract"
                 ),
                  Invoice(
@@ -131,7 +130,7 @@ def seed_data():
                     amount=8000,
                     type="payable",
                     status="pending",
-                    due_date=(datetime.utcnow() + timedelta(days=2)).date(),
+                    due_date=(datetime.now(timezone.utc) + timedelta(days=2)).date(),
                     description="Server Hosting"
                 )
             ]

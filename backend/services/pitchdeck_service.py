@@ -48,12 +48,12 @@ def compute_business_metrics(session: Session, business_id: int) -> Dict:
 
     # very rough growth calculation: last month vs previous month
     revenue_growth_percent = None
-    if len(last_keys) >= 2:
-        last = monthly_revenue.get(last_keys[-1], 0.0)
-        prev = monthly_revenue.get(last_keys[-2], 0.0)
+    revenue_keys = sorted(monthly_revenue.keys())
+    if len(revenue_keys) >= 2:
+        last = monthly_revenue[revenue_keys[-1]]
+        prev = monthly_revenue[revenue_keys[-2]]
         if prev > 0:
             revenue_growth_percent = (last - prev) / prev * 100
-
     # overdue invoices
     stmt_inv = select(Invoice).where(
         Invoice.business_id == business_id,

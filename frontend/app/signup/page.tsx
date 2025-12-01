@@ -12,7 +12,7 @@ import { useAuth } from "../../context/AuthContext";
 const signupSchema = z.object({
     name: z.string().min(1, "Business Name is required"),
     username: z.string().min(3, "Username must be at least 3 characters"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters").regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, "Password must include uppercase, lowercase, and number"),
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
@@ -37,7 +37,7 @@ export default function SignupPage() {
         setError("");
 
         try {
-            const response = await fetch("http://localhost:8000/auth/signup", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/signup`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -51,6 +51,11 @@ export default function SignupPage() {
             }
 
             const result = await response.json();
+
+            if (!result.access_token) {
+                throw new Error("Invalid response: missing access token");
+            }
+
             await login(result.access_token);
         } catch (err: any) {
             setError(err.message);

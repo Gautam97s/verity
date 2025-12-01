@@ -16,7 +16,7 @@ export default function ClientLayout({
     useEffect(() => {
         // Subtle ambient animation for background blobs
         if (blob1Ref.current && blob2Ref.current) {
-            gsap.to(blob1Ref.current, {
+            const anim1 = gsap.to(blob1Ref.current, {
                 x: '+=30',
                 y: '-=20',
                 duration: 8,
@@ -24,7 +24,7 @@ export default function ClientLayout({
                 yoyo: true,
                 ease: 'sine.inOut'
             });
-            gsap.to(blob2Ref.current, {
+            const anim2 = gsap.to(blob2Ref.current, {
                 x: '-=30',
                 y: '+=20',
                 duration: 10,
@@ -59,9 +59,8 @@ export default function ClientLayout({
                     </main>
 
                     <footer className="py-6 text-center text-slate-400 dark:text-slate-600 text-sm">
-                        <p>© 2024 Verity. Empowering MSMEs.</p>
-                    </footer>
-                </div>
+                        <p>© {new Date().getFullYear()} Verity. Empowering MSMEs.</p>
+                    </footer>                </div>
             </div>
         </AuthProvider>
     );

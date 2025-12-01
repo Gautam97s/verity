@@ -22,6 +22,7 @@ def explain_forecast(forecast_data: Dict) -> Dict:
     content = json.dumps(forecast_data, indent=2)
     result = generate_content(FORECAST_EXPLANATION_PROMPT, content)
     if not result or "error" in result:
-        print(f"Forecast Agent Error: {result['error']}. Using Mock Data.")
+        error_msg = result.get('error', 'No result returned') if result else 'No result returned'
+        print(f"Forecast Agent Error: {error_msg}.")
         return None
     return result
