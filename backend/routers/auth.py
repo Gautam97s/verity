@@ -48,7 +48,7 @@ def signup(business: BusinessCreate, session: Session = Depends(get_session)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 # Dummy hash for timing attack prevention
-DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$s9Z6b02Jca7VGkOGXU3iIgA$wNLNiuG5LBTQHE7ZarixiGfZkEM1Ub3qQjorgG"
+DUMMY_HASH = "$argon2id$v=19$m=65536,t=3,p=4$eW9N6R2D8P4fw7gXQmgNIQ$k3mbv2beU/yC64st0u2FXiFmlZNO4N5w7ot+ST2XM9c"
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):

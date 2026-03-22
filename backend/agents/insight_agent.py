@@ -30,4 +30,5 @@ def generate_insights(metrics: Dict) -> Dict:
     if not result or "error" in result:
         error_msg = result.get('error', 'No result returned') if result else 'No result returned'
         print(f"Insight Agent Error: {error_msg}. Returning empty insights.")
-        return {"insights": []}    return result
+        return {"insights": []}
+    return result
