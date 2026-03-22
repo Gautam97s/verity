@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from db import get_session
 from models.business import Business
@@ -22,4 +22,6 @@ from utils.auth import get_current_user
 @router.get("/me", response_model=Business, response_model_exclude={"hashed_password"})
 def get_current_business(username: str = Depends(get_current_user), session: Session = Depends(get_session)):
     business = session.exec(select(Business).where(Business.username == username)).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Business not found")
     return business

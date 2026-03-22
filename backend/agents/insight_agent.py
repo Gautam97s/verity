@@ -28,6 +28,7 @@ def generate_insights(metrics: Dict) -> Dict:
     content = json.dumps(metrics, indent=2)
     result = generate_content(INSIGHT_SUMMARIZATION_PROMPT, content)
     if not result or "error" in result:
-        print(f"Insight Agent Error: {result['error']}. Using Mock Data.")
+        error_msg = result.get('error', 'No result returned') if result else 'No result returned'
+        print(f"Insight Agent Error: {error_msg}. Returning empty insights.")
         return {"insights": []}
     return result

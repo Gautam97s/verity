@@ -9,8 +9,14 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 # Initialize Gemini
-if settings.GEMINI_API_KEY:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
+gemini_configured = False
+try:
+    if settings.GEMINI_API_KEY:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        gemini_configured = True
+except Exception as e:
+    logger.error(f"Failed to configure Gemini: {e}")
+    gemini_configured = False
 
 # Initialize Client (OpenAI vs xAI)
 api_key = settings.OPENAI_API_KEY
@@ -36,20 +42,42 @@ def generate_content(prompt: str, context: str, model: str = None) -> Dict[str, 
     Generates content using Gemini or OpenAI.
     """
     # 1. Try Gemini first if configured
-    if settings.GEMINI_API_KEY:
+    if gemini_configured:
         try:
             model_name = "gemini-2.0-flash" # Available model
             logger.info(f"Calling Gemini model: {model_name}")
-            
             gemini_model = genai.GenerativeModel(model_name)
             
             full_prompt = f"{prompt}\n\nINPUT_DATA:\n{context}"
             
+            # Configure safety settings to avoid over-blocking
+            safety_settings = {
+                genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            }
+
             response = gemini_model.generate_content(
-                full_prompt
+                full_prompt,
+                safety_settings=safety_settings,
+                request_options={"timeout": 30}
             )
             
-            content = response.text.strip()
+            # Validate response
+            if not response or not response.candidates:
+                logger.error("Gemini returned no candidates.")
+                return {"error": "No response from Gemini"}
+            
+            try:
+                content = response.text.strip()
+            except ValueError as e:
+                # response.text raises ValueError if content was blocked
+                logger.error(f"Gemini content blocked or invalid: {e}. Feedback: {response.prompt_feedback}")
+                return {"error": "Content blocked by safety filters"}
+            
+            if not content:
+                return {"error": "Empty response from Gemini"}
             logger.debug(f"Gemini response: {content}")
             
             # Clean up markdown code blocks if present

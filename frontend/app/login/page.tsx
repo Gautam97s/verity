@@ -41,7 +41,7 @@ export default function LoginPage() {
             formData.append("username", data.username);
             formData.append("password", data.password);
 
-            const response = await fetch("http://localhost:8000/auth/login", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/auth/login`, {
                 method: "POST",
                 body: formData,
             });
@@ -53,8 +53,12 @@ export default function LoginPage() {
 
             const result = await response.json();
             await login(result.access_token);
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("An unexpected error occurred");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -82,9 +86,12 @@ export default function LoginPage() {
                                 type="text"
                                 className="bg-transparent border-none outline-none w-full text-[#d3d3d3] placeholder-zinc-500"
                                 placeholder="Username"
-                                autoComplete="off"
+                                autoComplete="username"
                             />
                         </div>
+                        {errors.username && (
+                            <p className="text-red-400 text-xs -mt-3 ml-4">{errors.username.message}</p>
+                        )}
 
                         <div className="flex items-center gap-2 rounded-[25px] p-3 bg-[#171717] shadow-[inset_2px_5px_10px_rgb(5,5,5)] border border-transparent focus-within:border-white/10 transition-colors">
                             <svg viewBox="0 0 16 16" fill="currentColor" height="16" width="16" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white flex-shrink-0">
@@ -95,6 +102,7 @@ export default function LoginPage() {
                                 type={showPassword ? "text" : "password"}
                                 className="bg-transparent border-none outline-none w-full text-[#d3d3d3] placeholder-zinc-500"
                                 placeholder="Password"
+                                autoComplete="current-password"
                             />
                             <button
                                 type="button"
@@ -104,6 +112,9 @@ export default function LoginPage() {
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
+                        {errors.password && (
+                            <p className="text-red-400 text-xs -mt-3 ml-4">{errors.password.message}</p>
+                        )}
 
                         <div className="flex flex-col gap-4 mt-6">
                             <button
@@ -114,12 +125,13 @@ export default function LoginPage() {
                                 {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Login"}
                             </button>
 
-                            <button
+                            {/* TODO: Implement Forgot Password functionality */}
+                            {/* <button
                                 type="button"
                                 className="w-full py-2 rounded-[5px] bg-transparent text-zinc-400 hover:text-white transition-all duration-300 text-sm"
                             >
                                 Forgot Password
-                            </button>
+                            </button> */}
 
                             <p className="text-center text-sm text-zinc-500 mt-1">
                                 Don't have an account?{" "}
