@@ -196,7 +196,7 @@ export default function SendReminderPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400 hover:from-indigo-600 hover:via-sky-600 hover:to-emerald-500 text-white font-semibold text-base shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:pointer-events-none"
+                                className="w-full py-3 rounded-xl bg-linear-to-r from-indigo-500 via-sky-500 to-emerald-400 hover:from-indigo-600 hover:via-sky-600 hover:to-emerald-500 text-white font-semibold text-base shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:pointer-events-none"
                             >
                                 {loading ? (
                                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

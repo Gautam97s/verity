@@ -12,8 +12,9 @@ def parse_and_save_transaction(session: Session, business_id: int, raw_text: str
     name = parsed.get("counterparty_name")
     contact = None
     if name:
+        from sqlmodel import select
         contact = session.exec(
-            Contact.select().where(Contact.business_id == business_id, Contact.name == name)
+            select(Contact).where(Contact.business_id == business_id, Contact.name == name)
         ).first()
         if not contact:
             contact = Contact(business_id=business_id, name=name)

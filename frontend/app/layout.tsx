@@ -1,57 +1,28 @@
-"use client";
-
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import type { Metadata } from 'next';
 import Navbar from '../components/Navbar';
-import gsap from 'gsap';
+import Background from '../components/Background';
 import "./globals.css";
+
+export const metadata: Metadata = {
+  title: 'Verity - MSME Financial Dashboard',
+  description: 'AI-powered financial management platform for Indian MSMEs.',
+};
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const blob1Ref = useRef<HTMLDivElement>(null);
-  const blob2Ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Subtle ambient animation for background blobs
-    if (blob1Ref.current && blob2Ref.current) {
-      gsap.to(blob1Ref.current, {
-        x: '+=30',
-        y: '-=20',
-        duration: 8,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut'
-      });
-      gsap.to(blob2Ref.current, {
-        x: '-=30',
-        y: '+=20',
-        duration: 10,
-        repeat: -1,
-        yoyo: true,
-        ease: 'sine.inOut',
-        delay: 1
-      });
-    }
-  }, []);
-
   return (
     <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body className="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
         <div className="relative min-h-screen overflow-hidden font-sans selection:bg-indigo-500/30">
-          {/* Background Blobs */}
-          <div
-            ref={blob1Ref}
-            className="absolute top-[-10rem] left-[-10rem] w-[40rem] h-[40rem] bg-gradient-to-br from-sky-300/30 via-indigo-300/20 to-emerald-200/30 dark:from-sky-900/30 dark:via-indigo-900/20 dark:to-emerald-900/30 blur-3xl rounded-full opacity-60 pointer-events-none z-0"
-          />
-          <div
-            ref={blob2Ref}
-            className="absolute bottom-[-5rem] right-[-5rem] w-[35rem] h-[35rem] bg-gradient-to-tl from-purple-300/30 via-pink-300/20 to-orange-200/30 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-orange-900/30 blur-3xl rounded-full opacity-50 pointer-events-none z-0"
-          />
-
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-sky-100/10 via-indigo-50/10 to-emerald-50/10 dark:from-slate-900/0 dark:via-slate-900/0 dark:to-slate-900/0 pointer-events-none z-0" />
+          <Background />
 
           <div className="relative z-10 flex flex-col min-h-screen">
             <Navbar />

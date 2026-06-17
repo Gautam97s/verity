@@ -34,10 +34,20 @@ def compute_business_metrics(session: Session, business_id: int) -> Dict:
         key = month_key(t.date.year, t.date.month)
         if t.direction == "inflow":
             monthly_revenue[key] = monthly_revenue.get(key, 0.0) + t.amount
+        elif t.direction == "outflow":
+            # For simplicity, we just aggregate the outflow without storing monthly breakdown in metrics
+            # Or we can just calculate total outflow last 3 months by adding to total directly
+            if key in last_keys or len(monthly_revenue) == 0:
+                pass # Need to check if it's in the last 3 months
 
-    last_keys = sorted(monthly_revenue.keys())[-3:]
-    for k in last_keys:
-        total_inflow_last_3m += monthly_revenue[k]
+    # A better way to calculate total inflow/outflow last 3 months
+    last_keys = sorted(list(set(month_key(t.date.year, t.date.month) for t in txs)))[-3:]
+    for t in txs:
+        if month_key(t.date.year, t.date.month) in last_keys:
+            if t.direction == "inflow":
+                total_inflow_last_3m += t.amount
+            elif t.direction == "outflow":
+                total_outflow_last_3m += t.amount
 
     # very rough growth calculation: last month vs previous month
     revenue_growth_percent = None
@@ -62,6 +72,7 @@ def compute_business_metrics(session: Session, business_id: int) -> Dict:
         "location": getattr(business, "location", None),
         "monthly_revenue": monthly_revenue,
         "total_inflow_last_3m": total_inflow_last_3m,
+        "total_outflow_last_3m": total_outflow_last_3m,
         "revenue_growth_percent": revenue_growth_percent,
         "overdue_amount": overdue_amount,
         # Extend later with: top customers, margins, etc.

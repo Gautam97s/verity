@@ -1,0 +1,48 @@
+"use client";
+
+import React, { useEffect, useRef } from 'react';
+import gsap from 'gsap';
+
+export default function Background() {
+  const blob1Ref = useRef<HTMLDivElement>(null);
+  const blob2Ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Subtle ambient animation for background blobs
+    if (blob1Ref.current && blob2Ref.current) {
+      gsap.to(blob1Ref.current, {
+        x: '+=30',
+        y: '-=20',
+        duration: 8,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut'
+      });
+      gsap.to(blob2Ref.current, {
+        x: '-=30',
+        y: '+=20',
+        duration: 10,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+        delay: 1
+      });
+    }
+  }, []);
+
+  return (
+    <>
+      {/* Background Blobs */}
+      <div
+        ref={blob1Ref}
+        className="absolute top-[-10rem] left-[-10rem] w-[40rem] h-[40rem] bg-gradient-to-br from-sky-300/30 via-indigo-300/20 to-emerald-200/30 dark:from-sky-900/30 dark:via-indigo-900/20 dark:to-emerald-900/30 blur-3xl rounded-full opacity-60 pointer-events-none z-0"
+      />
+      <div
+        ref={blob2Ref}
+        className="absolute bottom-[-5rem] right-[-5rem] w-[35rem] h-[35rem] bg-gradient-to-tl from-purple-300/30 via-pink-300/20 to-orange-200/30 dark:from-purple-900/30 dark:via-pink-900/20 dark:to-orange-900/30 blur-3xl rounded-full opacity-50 pointer-events-none z-0"
+      />
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-sky-100/10 via-indigo-50/10 to-emerald-50/10 dark:from-slate-900/0 dark:via-slate-900/0 dark:to-slate-900/0 pointer-events-none z-0" />
+    </>
+  );
+}

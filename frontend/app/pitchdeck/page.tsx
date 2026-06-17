@@ -113,7 +113,7 @@ export default function PitchdeckPage() {
                                 className="slide-card aspect-video flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden group"
                             >
                                 {/* Slide Header */}
-                                <div className="h-2 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-400" />
+                                <div className="h-2 bg-linear-to-r from-indigo-500 via-sky-500 to-emerald-400" />
                                 <div className="flex-1 p-8 flex flex-col">
                                     <div className="flex items-start justify-between mb-6">
                                         <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{slide.heading}</h3>
